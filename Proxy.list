@@ -46,7 +46,6 @@ DOMAIN-SUFFIX,慈善机场.com
 DOMAIN-SUFFIX,赔钱机场.com
 DOMAIN-SUFFIX,顶级机场.com
 DOMAIN-SUFFIX,getemojii.com
-DOMAIN-SUFFIX,ipcheck.ing
 
 IP-CIDR,8.8.8.8/32,no-resolve
 IP-CIDR,8.8.4.4/32,no-resolve
