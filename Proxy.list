@@ -48,6 +48,7 @@ DOMAIN-SUFFIX,顶级机场.com
 DOMAIN-SUFFIX,getemojii.com
 DOMAIN-SUFFIX,pika.art
 DOMAIN-SUFFIX,opus.pro
+DOMAIN-SUFFIX,proxmox.com
 
 IP-CIDR,8.8.8.8/32,no-resolve
 IP-CIDR,8.8.4.4/32,no-resolve
