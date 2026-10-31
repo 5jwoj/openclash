@@ -1,8 +1,10 @@
 # ===================================================
-# Mihomo (Clash.Meta) 覆写配置模版 (已修正版)
+# Mihomo / Clash Party - DNS 防泄漏覆写修复版
+# 优先保留原有策略组、规则集及节点筛选
 # ===================================================
 
 # 全局基础配置
+mode: rule  # 确保按下方分流规则工作，而不是 Global 或 Direct
 mixed-port: 7890
 allow-lan: true
 bind-address: "*"
@@ -45,13 +47,16 @@ tun:
   auto-route: true
   auto-redirect: true
   auto-detect-interface: true
-  strict-route: true
+  strict-route: true  # Windows 下防止多网卡并行 DNS 泄漏
 
-# DNS 模块配置
+# DNS 模块配置（中国大陆域名直连解析；其他域名 DNS 随代理出站）
 dns:
   enable: true
   cache-algorithm: arc
   ipv6: false
+  prefer-h3: false
+  # 有意不启用 respect-rules：通过 #策略组 明确控制每条 DoH 的出口
+  # 如在 Clash Party 中另开 DNS 覆写，请检查最终配置是否覆盖了以下设置
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.0/16
   fake-ip-filter-mode: blacklist
@@ -69,15 +74,41 @@ dns:
     - "msftncsi.com"
     - "captive.apple.com"
     - "detectportal.firefox.com"
+
+  # 仅用于解析 DoH 上游的域名（引导 DNS）。
+  # 境外上游直接使用 IP 地址，避免境外 DNS 域名在这里被引导解析。
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
+
+  # 节点服务器域名必须在代理建链前可解析，不能走尚未连通的代理。
+  # 使用国内 HTTPS DNS 防止节点域名解析走明文 53 端口。
   proxy-server-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
+    - https://dns.alidns.com/dns-query#DIRECT
+    - https://doh.pub/dns-query#DIRECT
+
+  # 兜底 DNS 仅使用代理内的国外 DoH，不设可直连的国内备份 DNS。
+  # 注意：在“🚀 默认代理”中选了 DIRECT，就相当于主动允许直连。
   nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
+    - 'https://1.1.1.1/dns-query#🚀 默认代理'
+    - 'https://8.8.8.8/dns-query#🚀 默认代理'
+
+  # DNS 分流优先级高于 nameserver，避免国内站点查询走境外。
+  # 私有域名不发给境外 DNS；若需解析家中自定义内网域名，
+  # 可将此项替换为自己路由器的 LAN DNS IP（例如实际网关地址）。
+  nameserver-policy:
+    'rule-set:private_domain':
+      - https://dns.alidns.com/dns-query#DIRECT
+      - https://doh.pub/dns-query#DIRECT
+    'rule-set:cn_domain':
+      - https://dns.alidns.com/dns-query#DIRECT
+      - https://doh.pub/dns-query#DIRECT
+    '+.lan':
+      - https://dns.alidns.com/dns-query#DIRECT
+    '+.local':
+      - https://dns.alidns.com/dns-query#DIRECT
+    '+.home.arpa':
+      - https://dns.alidns.com/dns-query#DIRECT
 
 # 出站策略组
 proxy-groups:
@@ -144,6 +175,9 @@ rules:
   - RULE-SET,usd_domain,💶 Wallet
   - RULE-SET,steamcn_domain,DIRECT
   - RULE-SET,steam_domain,🎮 Steam
+
+  # 中国大陆域名优先直连，避免国内流量落入兜底
+  - RULE-SET,cn_domain,DIRECT
 
   # 常见境外非大陆域名走代理
   - RULE-SET,cn!_domain,🚀 默认代理
